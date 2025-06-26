@@ -106,8 +106,6 @@
         -   Starting a container is as easy as running `docker run <image_name>`.
         -   It abstracts away the complexities of configuring networking, storage, and user mappings.
 
-Of course. Here is a detailed set of notes from the "Installing Docker" section.
-
 ***
 
 # 2. Installing Docker
@@ -236,3 +234,134 @@ Of course. Here is a detailed set of notes from the "Installing Docker" section.
         docker run hello-world
         ```
     4.  This confirms the installation and user permissions are set up correctly.
+
+***
+
+# 3. Using Docker
+
+## Exploring the Docker CLI
+
+-   The **Docker Command Line Interface (CLI)** is the most popular way to interact with Docker.
+-   **Terminal Access:**
+    -   **Mac:** Use Spotlight (`Command` + `Space`), type `Terminal`, and press Enter.
+    -   **Windows:** Use the Start Menu to search for and open **PowerShell**.
+-   **Command Structure:** Most Docker commands follow a straightforward pattern:
+    ```
+    docker [TOP-LEVEL COMMAND] [SUB-COMMAND] [OPTIONS/FLAGS]
+    ```
+    -   **Top-Level Commands:** `login`, `run`, `pull`, `network`, etc.
+    -   **Sub-Commands:** Some top-level commands have nested commands (e.g., `docker network create`).
+-   **The Most Useful Flag: `--help`**
+    -   The `--help` flag can be used with *any* Docker command or sub-command to get information on how to use it.
+    -   It provides a usage summary and a list of all supported options.
+    -   **Examples:**
+        -   `docker --help`: Shows all top-level commands.
+        -   `docker network --help`: Shows sub-commands for the `network` command (`connect`, `create`, etc.).
+        -   `docker network create --help`: Shows all options for creating a network.
+    -   **Pro-Tip:** If you're ever stuck, just add `--help` to your command.
+
+## Create a Docker container
+
+This section covers the "long way" of creating a container to understand the individual steps.
+
+-   **Container Images:**
+    -   A container image is a compressed, pre-packaged file system containing an application, its environment, and a starting instruction called an **entry point**.
+    -   If an image isn't on your local machine, Docker will pull it from a registry (by default, **Docker Hub**).
+
+-   **Step 1: Create a Container (`docker container create`)**
+    -   This command creates a container from an image but **does not start it**.
+    -   It requires an image name and an optional **tag** (e.g., `:linux`).
+    -   **Command:**
+        ```bash
+        docker container create hello-world:linux
+        ```
+    -   The command returns the new container's unique **ID**.
+
+-   **Step 2: List Containers (`docker ps`)**
+    -   `docker ps` by default only shows *actively running* containers.
+    -   To see all containers (including stopped or created ones), use the `--all` flag.
+        ```bash
+        docker ps --all
+        ```
+    -   The container we just created will have a status of **Created**.
+
+-   **Step 3: Start a Container (`docker container start`)**
+    -   This command starts a previously created container using its ID.
+    -   **Pro-Tip:** You only need to use the first few unique characters of the ID.
+    -   **Command:**
+        ```bash
+        docker container start [CONTAINER_ID]
+        ```
+    -   The container's entry point will execute, but the output is not shown in the terminal. The container's status will change to **Exited (0)**, where `0` is a success code.
+
+-   **Step 4: View Container Logs (`docker logs`)**
+    -   This command retrieves the logs (standard output) from a container. This is how you see the output of a container that has already run.
+    -   **Command:**
+        ```bash
+        docker logs [CONTAINER_ID]
+        ```
+
+-   **Attaching to a Container's Output**
+    -   To see the output immediately upon starting, use the `--attach` flag.
+        ```bash
+        docker container start --attach [CONTAINER_ID]
+        ```
+    -   This is useful for seeing real-time output.
+    -   **Key Point:** Containers are not deleted by default. You can start the same container multiple times.
+
+## Create a Docker container: The short way
+
+-   The `docker run` command is a convenient shortcut that combines the "long way" steps into a single command.
+
+-   **The `docker run` Formula:**
+    > `docker run` = `docker container create` + `docker container start` + `docker container attach`
+
+-   **Command:**
+    ```bash
+    docker run hello-world:linux
+    ```
+
+-   **Behavior:**
+    1.  Creates a new container from the `hello-world` image.
+    2.  Starts the container.
+    3.  Attaches your terminal to the container to show its output immediately.
+    4.  It does **not** print the container ID by default. You must use `docker ps --all` to find it.
+
+-   You can still use `docker ps` to see the container's exit code and `docker logs` to view its output again later.
+
+## Create a Docker container from Dockerfiles, part 1
+
+-   To create a container for your own application, you first need to build a custom Docker image using a **`Dockerfile`**.
+-   A `Dockerfile` is a text file containing instructions for building a Docker image.
+
+-   **Key `Dockerfile` Instructions:**
+    -   `FROM`: Specifies the **base image** to build upon (e.g., `FROM alpine:latest`). This is the foundation of your new image.
+    -   `LABEL`: Adds metadata to the image, such as the maintainer's name.
+    -   `COPY`: Copies files from the **build context** (the directory you run the build from) into the container image.
+    -   `RUN`: Executes a command *during the build process*. This is used to install software, create directories, or configure the image environment (e.g., `RUN apt-get update && apt-get install -y curl`).
+    -   `USER`: Sets the user for subsequent `RUN`, `CMD`, and `ENTRYPOINT` instructions. This is a security best practice to avoid running as the `root` user.
+    -   `ENTRYPOINT`: Defines the main command to be executed when a container is **started** from the image.
+
+## Create a Docker container from Dockerfiles, part 2
+
+-   **Step 1: Build the Image (`docker build`)**
+    -   This command reads the `Dockerfile` and builds an image.
+    -   **Key Option: `-t` or `--tag`**
+        -   This assigns a human-readable name and optional tag to the image (e.g., `our-first-image:v1`). This is much more convenient than using the image ID.
+    -   **The Build Context:**
+        -   The last argument to `docker build` is the path to the build context. A `.` is used to specify the current directory.
+    -   **Example Command:**
+        ```bash
+        # Build an image from the Dockerfile in the current directory
+        # and tag it as 'our-first-image'
+        docker build -t our-first-image .
+        ```
+    -   **How it Works:** Docker images are composed of **layers**. Each instruction in the `Dockerfile` creates a new intermediate image layer. The final image is a combination of all these layers.
+
+-   **Step 2: Run the Container (`docker run`)**
+    -   Once the image is built and tagged, you can run a container from it using the name you provided.
+    -   **Command:**
+        ```bash
+        docker run our-first-image
+        ```
+    -   This will start a new container and execute the `ENTRYPOINT` defined in the `Dockerfile`.
