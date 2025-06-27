@@ -365,3 +365,142 @@ This section covers the "long way" of creating a container to understand the ind
         docker run our-first-image
         ```
     -   This will start a new container and execute the `ENTRYPOINT` defined in the `Dockerfile`.
+
+    Of course. Here are the detailed notes for the remainder of the "Using Docker" section.
+
+## Interact with your container
+
+-   **Long-Running Containers:** So far, we've used containers that exit immediately. Docker is also used for long-running processes like web servers.
+
+-   **Building from a specific Dockerfile:**
+    -   If your Dockerfile is not named `Dockerfile`, you must specify the file path using the `-f` or `--file` flag with `docker build`.
+    -   **Example:** `docker build --file server.Dockerfile -t our-first-server .`
+
+-   **Running a Server Container:**
+    -   If you use `docker run` on a server image, your terminal will "hang" because `docker run` attaches your terminal to the container's output by default. The server process doesn't exit, so it holds control.
+    -   Containers are not "interactive" by default, so you cannot send keystrokes (like `Ctrl+C`) to the process inside.
+
+-   **Stopping a "Hung" Container:**
+    1.  Open a **new terminal**.
+    2.  Find the running container's ID with `docker ps`.
+    3.  Forcefully stop the container using `docker kill [CONTAINER_ID]`.
+
+-   **Running a Container in the Background (Detached Mode):**
+    -   To run a container without it taking over your terminal, use the `-d` (detached) flag.
+    -   **Command:** `docker run -d our-first-server`
+    -   This starts the container and immediately returns your terminal prompt. You can then use `docker ps` to see that it's running.
+
+-   **Executing Commands in a Running Container (`docker exec`):**
+    -   `docker exec` allows you to run additional commands inside a container that is already running. This is extremely useful for troubleshooting.
+    -   **Syntax:** `docker exec [CONTAINER_ID] [COMMAND]`
+    -   **Example (get the time):** `docker exec [CONTAINER_ID] date`
+
+-   **Starting an Interactive Shell in a Container:**
+    -   You can use `docker exec` to open a terminal session (like `bash`) inside a container.
+    -   You need two flags for this:
+        -   `-i` or `--interactive`: Keeps the connection open to receive input.
+        -   `-t` or `--tty`: Allocates a pseudo-terminal so your shell looks and acts correctly.
+    -   These are almost always used together as `-it`.
+    -   **Command:** `docker exec -it [CONTAINER_ID] bash`
+    -   Once inside, you have a shell prompt from within the container. You can exit by typing `exit` or pressing `Ctrl+D`.
+
+## Stopping and removing the container
+
+-   **Problem:** By default, Docker does not remove stopped containers. They accumulate over time, creating "cruft" and taking up disk space.
+
+-   **Stopping a Container (`docker stop`):**
+    -   This command attempts a **graceful shutdown**. It sends a `SIGTERM` signal to the main process and waits (by default, up to 10 seconds) for it to stop cleanly.
+    -   If you need to stop a container immediately, use `docker stop -t 0 [CONTAINER_ID]`. This is faster but can lead to data loss if the application is in the middle of a task.
+
+-   **Removing a Container (`docker rm`):**
+    -   Removes one or more *stopped* containers. It will error if you try to remove a running container.
+    -   To stop and remove a running container in one step, use the `-f` (force) flag: `docker rm -f [CONTAINER_ID]`.
+
+-   **Pro-Tip: Removing All Containers at Once:**
+    -   You can combine `docker ps` and `docker rm` with a command-line utility called `xargs` to clean up all containers.
+    -   **Command:**
+        ```bash
+        docker ps -a -q | xargs docker rm
+        ```
+    -   **Breakdown:**
+        -   `docker ps -a -q`: Lists the IDs (`-q` for quiet) of *all* (`-a`) containers.
+        -   `|`: A "pipe" that sends the output of the first command as input to the second.
+        -   `xargs docker rm`: Takes the list of IDs and runs `docker rm` for each one.
+
+-   **Removing Images (`docker rmi`):**
+    -   To remove Docker images and free up significant disk space, use `docker rmi [IMAGE_NAME_OR_ID]`.
+    -   This will fail if the image is currently being used by any container (even a stopped one).
+    -   You must remove the dependent containers first, or use `docker rmi -f` to force removal.
+
+## Binding ports to your container
+
+-   **Concept:** **Port binding** (or publishing) allows you to map a network port on your host machine to a network port inside a container. This lets you access services like web servers running inside containers.
+-   **The Flag:** Use the `-p` or `--publish` flag with `docker run`.
+-   **Syntax and Mnemonic:**
+    -   `-p [HOST_PORT]:[CONTAINER_PORT]`
+    -   A helpful way to remember the order is **Outside:Inside**. The host port is "outside" the container, and the container port is "inside."
+-   **Example:**
+    1.  Start a web server container listening on port 5000: `docker run -d --name my-web-server our-web-server`
+    2.  Trying to access `localhost:5000` from your browser will fail.
+    3.  Stop and remove the container: `docker rm -f my-web-server`
+    4.  Restart it with port binding: `docker run -d --name my-web-server -p 5001:5000 our-web-server`
+    5.  Now, accessing `localhost:5001` in your browser will connect to port 5000 inside the container, and the site will load.
+-   **Naming Containers:** The `--name` flag gives a container a human-readable name, which is easier to work with than a random ID.
+
+## Saving data from containers
+
+-   **Problem:** Containers are **ephemeral**. Any data created inside a container is lost forever when the container is deleted.
+-   **Solution: Volume Mounting**
+    -   This feature maps a folder (or file) on your host machine to a folder inside the container. Data written to that folder inside the container is actually written to the host's folder, making it persistent.
+-   **The Flag:** Use the `-v` or `--volume` flag with `docker run`.
+-   **Syntax and Mnemonic:**
+    -   `-v [HOST_PATH]:[CONTAINER_PATH]`
+    -   The order is again **Outside:Inside**.
+-   **Example:**
+    -   `docker run -v /tmp/container-data:/tmp ubuntu echo "Hello there." > /tmp/file`
+    -   In this command, when the container writes to `/tmp/file`, the file is actually created on the host machine at `/tmp/container-data/file`. Even if the container is removed, the data remains on the host.
+-   **Caveat (Mounting a single file):** If you map a host file that *does not exist*, Docker will create an empty **directory** on the host at that path instead of a file. This often causes errors inside the container.
+    -   **Lesson:** When mounting files, ensure the source file on the host already exists.
+
+## Introducing the Docker Hub
+
+-   **Container Image Registry:** A place to store, manage, and distribute container images.
+-   **Tags:** A way to version images. The format is `image-name:version` (e.g., `nginx:1.21`). If no version is specified, Docker uses the `latest` tag by default.
+-   **Docker Hub:** The default, public registry used by Docker. It's like GitHub, but for Docker images.
+
+## Pushing images to the Docker registry
+
+1.  **Create an Account:** Register for a free account at `hub.docker.com`.
+2.  **Log In from the CLI:** Use the `docker login` command and enter your Docker Hub username and password.
+3.  **Tag the Image for the Registry:** Before you can push an image to Docker Hub, you must tag it in a specific format: `<DOCKER_HUB_USERNAME>/<IMAGE_NAME>:<VERSION>`.
+    -   **Command:** `docker tag <local-image-name> <username>/<new-image-name>:<version>`
+    -   **Example:** `docker tag our-web-server carlosnunez/our-web-server:0.0.1`
+4.  **Push the Image:** Use the `docker push` command with the newly tagged image name.
+    -   **Command:** `docker push <username>/<image-name>:<version>`
+    -   **Example:** `docker push carlosnunez/our-web-server:0.0.1`
+
+## Checking your images in Docker Hub
+
+-   You can view and manage your pushed images in your browser by logging into Docker Hub.
+-   **Optimized Pushes:** Docker is smart about pushing. Images are made of layers. If some layers of your image already exist in the registry, Docker will not upload them again, making subsequent pushes much faster.
+-   **Deleting an Image Repository:**
+    -   This **cannot** be done from the command line.
+    -   You must log in to the Docker Hub website, go to the repository's **Settings**, and click **Delete Repository**.
+
+## Challenge & Solution: Starting NGINX
+
+-   **Goal:** Serve a static website using the official NGINX image, with specific port and volume mappings, and ensure the container is automatically removed.
+-   **The Final Command:**
+    ```bash
+    docker run --rm --name website -v "$PWD/website:/usr/share/nginx/html" -p 8080:80 nginx
+    ```
+-   **Breakdown of Flags:**
+    -   `--rm`: Automatically removes the container when it stops.
+    -   `--name website`: Names the container "website".
+    -   `-v "$PWD/website:/usr/share/nginx/html"`: Mounts the `website` folder from the current directory (`$PWD`) into the default NGINX content directory inside the container.
+    -   `-p 8080:80`: Maps host port 8080 to the container's port 80 (NGINX's default).
+    -   `nginx`: The name of the image to use from Docker Hub.
+-   **Verification:**
+    1.  Access `http://localhost:8080` in a browser to see the website.
+    2.  Go back to the terminal and stop the container with `Ctrl+C`.
+    3.  Run `docker ps -a` to confirm that the "website" container is gone, proving that `--rm` worked.
