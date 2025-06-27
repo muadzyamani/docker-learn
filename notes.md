@@ -594,3 +594,74 @@ This section covers the "long way" of creating a container to understand the ind
     -   **Cause:** The previous, slow-running container was still present (either running or stopped) and was occupying the name.
     -   **Fix:** Remove the old container using `docker rm [CONTAINER_NAME]`, then re-run the `docker run` command.
     -   **Result:** The fixed container now runs immediately and successfully.
+
+***
+
+# 5. Additional Docker Resources
+
+## Docker best practices
+
+Three key best practices to consider as you move your apps into Docker.
+
+### 1. Use Verified Images and Image Scanners
+
+-   **The Risk:** It is very easy to download malicious Docker images from public registries like Docker Hub. These images can be used to steal credentials, run crypto miners, or cause other harm.
+-   **Example:** An image called `Alpine 2` was uploaded to Docker Hub. It ran Alpine Linux but also secretly ran a crypto miner, which could lead to huge cloud bills from network traffic.
+-   **Solution 1: Use Verified Images**
+    -   Look for the **"Official Image"** or verified publisher designation on Docker Hub. This means the image has been scanned and vetted by Docker.
+-   **Solution 2: Use Image Scanners**
+    -   Since many safe images are not verified, use a container image scanning tool.
+    -   These tools inspect each layer of an image for known vulnerabilities or malicious files.
+    -   **Examples of Open Source Scanners:** Clair, Trivy, Dagda.
+
+### 2. Always Use Version Tags (Avoid `latest`)
+
+-   **The Problem:** By default, if you don't specify a tag, Docker uses `latest`. This is problematic for production use for three reasons:
+    1.  **Ambiguity:** You don't know which specific version of an application you are getting.
+    2.  **Unpredictability:** The `latest` tag can change. Pulling the same image later might give you a different, potentially breaking version without you knowing.
+    3.  **Rollback Difficulty:** If you only use `latest`, it's hard to roll back to a specific, known-good previous version.
+-   **Solution:** Always explicitly add a version tag when building images (e.g., `my-app:1.2.3`). It's a simple practice that prevents major problems later.
+
+### 3. Run Containers as a Non-Root User
+
+-   **The Risk:** By default, containers run as the `root` user, which has full administrative privileges inside the container. This is a significant security risk.
+-   **Solution 1: For Existing Images**
+    -   Use the `--user` flag with `docker run` or `docker container create`.
+    -   You can specify a user name (e.g., `nobody`) or a Linux user ID (e.g., `1001`).
+    -   **Command:** `docker run --user "nobody" [IMAGE_NAME]`
+-   **Solution 2: For Your Own Images**
+    -   Use the `USER` instruction in your `Dockerfile` to set a default non-root user for the container to run as.
+    -   **Example:**
+        ```dockerfile
+        # ... other instructions ...
+        RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+        USER appuser
+        ENTRYPOINT ["/app/start"]
+        ```
+
+## Taking it to the next level with Docker Compose
+
+-   **The Problem:** Docker is great for single applications, but modern apps often have multiple components (e.g., a web front-end, a backend API, a database). Running many `docker` CLI commands to connect them all with networks and volumes can be tedious.
+-   **The Solution: Docker Compose**
+    -   A tool for defining and running multi-container Docker applications.
+    -   You define all your services, networks, and volumes in a single YAML file called `docker-compose.yml`.
+    -   You can start the entire application stack with a single command: `docker-compose up`.
+    -   This is extremely helpful for local development and for running integration or end-to-end tests.
+
+## Level up even more with Kubernetes
+
+-   **The Problem:** Docker and Docker Compose work well on a single machine, but they have limitations when running applications at scale across multiple machines (hosts):
+    -   Docker networks don't span multiple hosts by default.
+    -   There's no built-in solution for moving containers between hosts (failover) or for auto-scaling based on load.
+    -   Higher-level concerns like advanced traffic routing and load balancing are not included.
+-   **The Solution: Container Orchestrators**
+    -   Tools that manage containerized applications across a cluster of machines. They handle scheduling, scaling, networking, and service discovery.
+    -   **Examples:** Docker Swarm, Mesosphere, HashiCorp Nomad, AWS ECS.
+-   **Kubernetes: The Leading Orchestrator**
+    -   An open-source, "planet-scale" container orchestrator for automating deployment, scaling, and management.
+    -   **Key Features:**
+        1.  **Distributed System:** Designed to run across many machines, making it highly resilient and scalable. It can connect hundreds of thousands of containers as if they were on one giant machine.
+        2.  **Grouping and Scaling:** Allows you to group containers (in "Pods") and easily scale them up or down in response to demand, without needing to manage individual VMs.
+        3.  **Advanced Networking and Security:** Provides powerful tools to secure traffic between containers and manage how traffic is routed to them from the outside world (e.g., based on URL paths).
+        4.  **Extensible Platform:** Kubernetes has a massive ecosystem of tools and products that extend its functionality, making it incredibly flexible.
+-   **Analogy:** If Docker is the box that contains everything needed to make a meal, Kubernetes is the global delivery service that can clone, ship, and manage millions of those boxed meals worldwide.
