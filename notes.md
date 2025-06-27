@@ -366,8 +366,6 @@ This section covers the "long way" of creating a container to understand the ind
         ```
     -   This will start a new container and execute the `ENTRYPOINT` defined in the `Dockerfile`.
 
-    Of course. Here are the detailed notes for the remainder of the "Using Docker" section.
-
 ## Interact with your container
 
 -   **Long-Running Containers:** So far, we've used containers that exit immediately. Docker is also used for long-running processes like web servers.
