@@ -504,3 +504,93 @@ This section covers the "long way" of creating a container to understand the ind
     1.  Access `http://localhost:8080` in a browser to see the website.
     2.  Go back to the terminal and stop the container with `Ctrl+C`.
     3.  Run `docker ps -a` to confirm that the "website" container is gone, proving that `--rm` worked.
+
+***
+
+# 4. When Things Go Wrong
+
+## Help! I can't seem to create more containers
+
+-   **The Problem:** You try to run a container and receive a "no space left on device" error, but checking your computer's disk space with `df -h` shows that you have plenty of space.
+
+-   **The Cause:**
+    -   On macOS and some Windows setups, the Docker engine runs inside a small virtual machine.
+    -   The error message refers to the disk space *inside that VM*, not on your host computer.
+    -   Over time, unused images, stopped containers, and intermediate build layers can fill up this dedicated space.
+
+-   **The Solutions:**
+
+    1.  **Remove Unused Images (`docker rmi`):**
+        -   List all images with `docker images`.
+        -   Identify images you no longer need and remove them.
+        -   You can remove multiple images at once.
+            ```bash
+            docker rmi image-one image-two image-three
+            ```
+        -   **Note:** If an image is being used by a container (even a stopped one), you must first remove the container with `docker rm` or use `docker rmi -f` to force deletion.
+
+    2.  **Prune the System (`docker system prune`):**
+        -   This is a powerful command that automatically cleans up unused Docker resources.
+        -   It will remove:
+            -   All stopped containers.
+            -   All networks not used by at least one container.
+            -   All dangling images (intermediate layers not associated with a tagged image).
+            -   All build cache.
+        -   **Command:** `docker system prune`
+        -   It will prompt for confirmation (`y/N`) because it is a destructive action.
+        -   This command can often reclaim gigabytes of space.
+
+## Help! My container is really slow
+
+-   **Problem:** A container is running much more slowly than expected.
+
+-   **Troubleshooting Commands:**
+
+    1.  **`docker stats`:**
+        -   Provides a live, real-time stream of performance metrics for running containers, including CPU usage, memory usage, and network I/O.
+        -   **Usage:** Run `docker stats [CONTAINER_NAME_OR_ID]` to view stats for a specific container.
+        -   This is excellent for seeing if a container is being "hammered" or hitting a resource limit.
+
+    2.  **`docker top`:**
+        -   Shows the processes running *inside* a container, much like the `top` command on Linux.
+        -   This is useful for seeing exactly what command or application is running without having to `exec` into the container.
+        -   **Usage:** `docker top [CONTAINER_NAME_OR_ID]`
+
+    3.  **`docker inspect`:**
+        -   Outputs a large, detailed JSON object containing all configuration and state information about a container.
+        -   This is great for deep dives and for scripting.
+        -   **Usage:** `docker inspect [CONTAINER_NAME_OR_ID]`
+        -   **Pro-Tip:** Pipe the output to `less` to view it page by page: `docker inspect [CONTAINER_NAME_OR_ID] | less`.
+        -   You can search within `less` (e.g., by typing `/Mounts`) to find specific configuration details like mounted volumes, restart policies, network settings, and more.
+
+## Challenge: Fix a broken container
+
+-   **Goal:** A provided `Dockerfile` and script build a broken container. The challenge is to fix both so the container runs successfully and immediately prints a series of messages.
+-   **Hints:**
+    -   Use `docker run -it` to run interactively.
+    -   Use `docker ps` and `docker rm` if you get stuck.
+
+## Solution: Fix a broken container
+
+-   **Problem 1: Docker Build Fails**
+    -   **Symptom:** The `docker build` command fails with an error: "pull access denied for ubuntu:xeniall, repository does not exist or may require 'docker login'".
+    -   **Investigation:** Checking Docker Hub for the `ubuntu` image reveals that the tag should be `xenial` (with one 'l'), not `xeniall`. It was a typo.
+    -   **Fix:** Edit the `Dockerfile` and change `FROM ubuntu:xeniall` to `FROM ubuntu:xenial`. Rebuild the image.
+
+-   **Problem 2: Container Runs Very Slowly**
+    -   **Symptom:** The container starts but processes messages very slowly, whereas the prompt said it should be immediate.
+    -   **Investigation:**
+        1.  Open a second terminal and run `docker stats [CONTAINER_NAME]`. This reveals that the CPU usage is at 100%.
+        2.  Run `docker top [CONTAINER_NAME]`. This shows that a program called `yes` is running inside the container.
+        3.  The `yes` command is a known utility that prints 'y' repeatedly, consuming 100% of a CPU core. This is the source of the slowness.
+    -   **Fix:**
+        1.  Edit the script file (`app.sh`).
+        2.  Find and delete the line containing the `yes` command.
+        3.  Save the file.
+        4.  **Rebuild the Docker image** with `docker build` to include the change.
+
+-   **Problem 3: Container Name Conflict**
+    -   **Symptom:** After fixing the script and rebuilding, running the container again fails with an error: "container name... is already in use by container...".
+    -   **Cause:** The previous, slow-running container was still present (either running or stopped) and was occupying the name.
+    -   **Fix:** Remove the old container using `docker rm [CONTAINER_NAME]`, then re-run the `docker run` command.
+    -   **Result:** The fixed container now runs immediately and successfully.

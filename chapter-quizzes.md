@@ -1,6 +1,6 @@
 
 
-## Using Docker Quiz
+## Using Docker Topic Quiz
 
 ### **Question 1 of 14**
 You have upgraded your application to a new version, `1.0.1`, and created an image for it called `my-app`. You successfully pushed the image with `docker push`. Upon logging into Docker Hub, you notice that `1.0.1` is not there but `1.0.0` is. What is the most likely cause for this happening?
@@ -162,3 +162,25 @@ Which of these commands fixes this problem most efficiently?
 *   `docker container create --name 8dee... our-server && docker rm 8dee`
 *   `for i in $(docker ps -aq); do docker rm -f $i; done`
 *   **`docker ps -aq | xargs docker rm -f` (Correct)**
+
+***
+
+# When Things Go Wrong Topic Quiz
+
+### **Question 1 of 2**
+Which of these commands can you run to debug a slow container?
+
+*   `docker images`
+*   **`docker top [container-id]` (Correct)**
+*   `docker run`
+*   `docker rmi`
+
+---
+
+### **Question 2 of 2**
+You're not able to create more containers. Which of these commands will **not** help you reclaim enough space to create containers?
+
+*   `docker system prune`
+*   **`df -h /` (Correct)**
+*   `docker rmi nginx`
+*   `docker rmi -f $(docker images -f "dangling=true" -q)`
