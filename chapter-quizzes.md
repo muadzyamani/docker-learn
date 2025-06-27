@@ -1,6 +1,6 @@
 
 
-## Using Docker Topic Quiz
+# Using Docker Chapter Quiz
 
 ### **Question 1 of 14**
 You have upgraded your application to a new version, `1.0.1`, and created an image for it called `my-app`. You successfully pushed the image with `docker push`. Upon logging into Docker Hub, you notice that `1.0.1` is not there but `1.0.0` is. What is the most likely cause for this happening?
@@ -165,7 +165,7 @@ Which of these commands fixes this problem most efficiently?
 
 ***
 
-# When Things Go Wrong Topic Quiz
+# When Things Go Wrong Chapter Quiz
 
 ### **Question 1 of 2**
 Which of these commands can you run to debug a slow container?
@@ -184,3 +184,35 @@ You're not able to create more containers. Which of these commands will **not** 
 *   **`df -h /` (Correct)**
 *   `docker rmi nginx`
 *   `docker rmi -f $(docker images -f "dangling=true" -q)`
+
+***
+
+# Additional Docker Resources Chapter Quiz
+
+### **Question 1 of 3**
+Which of these benefits for using Kubernetes is most accurate?
+
+*   It makes managing thousands of containers much simpler than using Docker alone.
+*   It is faster than using Docker alone.
+*   **It makes managing hundreds of thousands of containers much simpler than using Docker alone. (Correct)**
+*   It is less complex than pure Docker.
+
+---
+
+### **Question 2 of 3**
+Which of these problems does Docker Compose **not** solve?
+
+*   **Autoscaling containers and transparently moving them from machine to machine. (Correct)**
+*   Simplifies local development by allowing you to run multiple containers at once.
+*   Uses a manifest file to declare your application's dependencies and run them in a local Docker network.
+*   Prevents you from having to run multiple `docker` CLI commands to start multiple containers.
+
+---
+
+### **Question 3 of 3**
+Which of these reasons best summarizes why you should **not** use the `latest` tag when building Docker images?
+
+*   It makes your Docker image bigger, as Docker includes additional files and configurations for images tagged with `latest`.
+*   **The application within the image can change when pulled again in the future. (Correct)**
+*   It makes Docker containers faster.
+*   It makes Docker containers slower.
