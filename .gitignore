@@ -1,7 +1,1 @@
 Exercise Files/
-
-# Exclude files and folders within 'Docker First Project Course'
-Docker First Project Course/.DS_Store
-Docker First Project Course/node_modules/
-Docker First Project Course/.tmp/
-Docker First Project Course/npm-debug.log
